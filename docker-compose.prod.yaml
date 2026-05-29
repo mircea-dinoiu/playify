@@ -1,0 +1,17 @@
+# Production deployment compose. Counterpart to docker-compose.yml
+# (which builds from local source for development).
+#
+# Pulls the prebuilt image from GHCR (built by .github/workflows/docker.yml
+# on every push to main). The :latest tag means each `docker compose pull`
+# grabs the most recent CI build — bump by syncing the fork with upstream
+# and waiting for the rebuild, then redeploying.
+#
+# Consumed by the homelab repo at homelab/playify/prepare.sh, which
+# fetches this file at deploy time.
+
+services:
+  playify:
+    image: ghcr.io/mircea-dinoiu/playify:latest
+    container_name: playify
+    env_file: .env
+    restart: unless-stopped
