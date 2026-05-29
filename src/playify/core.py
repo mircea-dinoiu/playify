@@ -505,7 +505,7 @@ async def load_states_on_startup():
                     logger.info(
                         f"[{guild_id}] Resuming: Reconnecting to voice channel '{channel.name}'..."
                     )
-                    player.voice_client = await channel.connect()
+                    player.voice_client = await channel.connect(self_deaf=True)
 
                     text_channel_id = state.controller_channel_id or (
                         channel.last_message.channel.id if channel.last_message else 0

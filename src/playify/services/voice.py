@@ -238,7 +238,7 @@ async def ensure_voice_connection(
             logger.info(
                 f"[{guild_id}] No active voice client. Attempting to connect to '{voice_channel.name}'."
             )
-            new_vc = await voice_channel.connect()
+            new_vc = await voice_channel.connect(self_deaf=True)
             music_player.voice_client = new_vc
             vc = new_vc
             logger.info(f"[{guild_id}] Successfully connected.")
