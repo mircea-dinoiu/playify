@@ -2,9 +2,10 @@
 # (which builds from local source for development).
 #
 # Pulls the prebuilt image from GHCR (built by .github/workflows/docker.yml
-# on every push to main). The :latest tag means each `docker compose pull`
-# grabs the most recent CI build — bump by syncing the fork with upstream
-# and waiting for the rebuild, then redeploying.
+# on every push to main). The :latest tag + Watchtower means new CI builds
+# auto-deploy within ~60s — no manual deploy needed for code changes.
+# Compose-shape changes (new env, ports, volumes) still need a re-run of
+# `./deploy.sh playify` from the homelab repo.
 #
 # Consumed by the homelab repo at homelab/playify/prepare.sh, which
 # fetches this file at deploy time.
@@ -15,3 +16,27 @@ services:
     container_name: playify
     env_file: .env
     restart: unless-stopped
+
+  # Auto-update: every 60s, check whether
+  # ghcr.io/mircea-dinoiu/playify:latest has a new digest. If so, pull it
+  # and recreate the playify container (env preserved). --cleanup discards
+  # the superseded image layers so disk doesn't grow with old builds.
+  # Scoped by container name so nothing else on this host gets watched.
+  #
+  # Container name is watchtower-playify (not just `watchtower`) so it
+  # coexists with the 2beep2boop stack's watchtower instance. GHCR auth
+  # comes from the host's ~/.docker/config.json if the image is private;
+  # public images need no login.
+  watchtower-playify:
+    image: containrrr/watchtower:latest
+    container_name: watchtower-playify
+    restart: unless-stopped
+    environment:
+      # containrrr/watchtower defaults to Docker API 1.25, which newer
+      # daemons (Docker 25+) reject as too old. Pinning to a version that
+      # any host running Docker 20.10+ supports.
+      DOCKER_API_VERSION: "1.41"
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+      - ${HOME}/.docker/config.json:/config.json:ro
+    command: --interval 60 --cleanup playify
